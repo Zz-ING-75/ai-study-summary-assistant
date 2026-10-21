@@ -1,0 +1,7 @@
+deepeval>=3.7
+openai>=1.68
+openpyxl>=3.1
+pandas>=2.2
+python-dotenv>=1.0
+pytest>=8.0
+streamlit>=1.40
