@@ -1,41 +1,165 @@
-# 生物学习资料摘要自动评测
+# 📚 AI 学习资料助手
 
-这是一个适合AI产品经理作品集的学生项目：Python从Excel读取生物学习资料，调用DeepSeek、通义千问或豆包生成摘要，再使用DeepEval的G-Eval指标和OpenAI评审模型，从知识点覆盖率、事实忠实度、简洁度与结构清晰度四个维度自动评分。
+一个面向学生预习与复习场景的双模式 AI 学习资料总结 Demo。
 
-## 项目流程
+用户可以粘贴教材、讲义或课程资料，根据学习需求选择“快速总结”或“详细总结”。系统会自动调用对应的大模型，生成结构化学习摘要，并展示响应时间与 Token 使用情况。
+
+本项目基于 30 份生物学习资料、90 份模型摘要的离线评测结果完成模型选型，并将评测结论转化为可交互的产品 Demo。
+
+## 一、项目背景
+
+长篇学习资料通常存在阅读成本高、重点不突出和复习效率低等问题。
+
+本项目希望解决以下需求：
+
+- 快速提取学习资料中的核心知识点；
+- 根据预习和考试复习场景提供不同详细程度的摘要；
+- 通过质量、速度和输出长度评测，为不同模式选择合适的模型；
+- 将模型评测结果转化为用户可以直接使用的网页产品。
+
+## 二、核心功能
+
+- 支持粘贴最长 5000 字符的学习资料；
+- 提供“快速总结”和“详细总结”两种学习模式；
+- 自动校验空内容和过短内容；
+- 展示生成结果、响应时间和模型返回 Token；
+- 显示本次调用的模型、Prompt 和输入信息；
+- 模型调用失败时提供错误提示；
+- API Key 通过 `.env` 管理，不写入代码。
+
+## 三、双模式产品方案
+
+### 快速总结
+
+- 调用模型：豆包
+- 使用 Prompt：`prompt_fast.txt`
+- 适用场景：日常预习、快速浏览和考前回顾
+- 输出特点：提取 3～5 个核心知识点，内容更精简
+
+### 详细总结
+
+- 调用模型：DeepSeek
+- 使用 Prompt：`prompt_detailed.txt`
+- 适用场景：考试复习、系统整理和深度学习
+- 输出特点：提供核心概念、重要知识点、易混淆点和总结
+
+模型分层方案来自离线评测结果。模型实际响应时间会受到网络状态、服务负载和生成长度影响，单次调用速度不代表长期平均表现。
+
+## 四、产品流程
 
 ```text
-biology_first5.xlsx
+用户粘贴学习资料
         ↓
-DeepSeek API生成V1/V2摘要
+系统校验输入内容
         ↓
-generated_summaries.xlsx
+用户选择学习模式
         ↓
-DeepEval + OpenAI评审模型
+快速总结：豆包 + prompt_fast.txt
+详细总结：DeepSeek + prompt_detailed.txt
         ↓
-evaluation_results.xlsx
+生成结构化学习摘要
+        ↓
+展示响应时间、Token 和调用信息
 ```
 
-## 生成V1/V2分析报告
+## 五、模型评测实验
 
-完成评测后运行：
+### 实验设计
+
+- 数据集：30 份生物学习资料
+- 被测模型：DeepSeek、通义千问、豆包
+- 摘要数量：90 份
+- Prompt 实验：V1/V2 对比
+- 评测维度：
+  - 知识点覆盖率
+  - 事实忠实度
+  - 简洁度
+  - 结构清晰度
+- 效率指标：
+  - 响应时间
+  - 输出 Token
+
+### 评测方法
+
+项目使用 Python 和 Pandas 完成数据处理，通过大模型 API 批量生成摘要，并使用 DeepEval 与评审模型完成自动评分。
+
+针对批量调用中的超时、重复数据和任务中断问题，流程加入：
+
+- 自动重试
+- 逐条保存
+- 结果去重
+- 断点续跑
+
+### 实验结论
+
+在本次测试数据和配置下：
+
+- 三个模型综合得分均超过 0.95；
+- V2 Prompt 在结构化表达和知识覆盖方面表现更稳定；
+- 豆包平均响应时间约为 5.38 秒，表现出较好的响应效率与稳定性；
+- 综合质量、速度和输出长度，最终形成“豆包快速总结 + DeepSeek详细总结”的分层产品方案。
+
+自动评分并非绝对标准，重要结论仍需结合人工抽查判断。
+
+## 六、技术架构
+
+```text
+Streamlit
+    ↓
+输入校验与模式选择
+    ↓
+Python 业务逻辑
+    ↓
+豆包 API / DeepSeek API
+    ↓
+结构化摘要与调用指标展示
+```
+
+主要技术：
+
+- Python
+- Streamlit
+- Pandas
+- OpenAI SDK
+- DeepEval
+- OpenPyXL
+- Pytest
+- 大模型 API
+
+## 七、项目结构
+
+```text
+study-summary-evaluator/
+├── app.py                         # Streamlit 网页入口
+├── generate_summaries.py          # 批量生成摘要
+├── evaluate_summaries.py          # 自动评测
+├── analyze_results.py             # 生成分析报告
+├── prompts/
+│   ├── prompt_fast.txt            # 快速总结 Prompt
+│   ├── prompt_detailed.txt        # 详细总结 Prompt
+│   ├── prompt_v1.txt
+│   └── prompt_v2.txt
+├── src/study_summary_evaluator/   # 核心业务模块
+├── data/input/                    # 测试数据集
+├── data/output/                   # 本地结果文件
+├── tests/                         # 自动化测试
+├── docs/
+│   ├── demo-acceptance-test-report.pdf
+│   └── demo-acceptance-test-report.docx
+├── .env.example                   # 环境变量示例
+└── requirements.txt               # Python 依赖
+```
+
+## 八、本地运行
+
+### 1. 下载项目
 
 ```bash
-python analyze_results.py
+git clone https://github.com/Zz-ING-75/ai-study-summary-assistant.git
+cd ai-study-summary-assistant
 ```
 
-程序会生成 `data/output/analysis_report.xlsx`，其中包含：
-
-- `V1_V2汇总`：不同Prompt版本的平均得分、响应时间和Token；
-- `评分明细`：适合查看的精简逐条结果；
-- `自动结论`：V2相较V1的变化；
-- V1/V2质量得分对比柱状图。
-
-## 1. 在VS Code中打开项目
-
-打开文件夹 `study-summary-evaluator`，然后打开VS Code内置终端。
-
-## 2. 创建虚拟环境
+### 2. 创建虚拟环境
 
 macOS：
 
@@ -51,7 +175,7 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-## 3. 安装依赖
+### 3. 安装依赖
 
 ```bash
 python -m pip install --upgrade pip
@@ -59,120 +183,94 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## 4. 配置API Key
+### 4. 配置 API Key
 
-复制 `.env.example`，并把副本命名为 `.env`：
+复制 `.env.example` 并将副本命名为 `.env`，然后填写自己账号可用的 API Key：
 
 ```text
-DEEPSEEK_API_KEY=你的DeepSeek_API_Key
-OPENAI_API_KEY=你的OpenAI_API_Key
-QWEN_API_KEY=你的千问API_Key
-DOUBAO_API_KEY=你的豆包API_Key
-DEEPSEEK_MODEL=deepseek-v4-flash
-OPENAI_JUDGE_MODEL=gpt-5.4
-QWEN_MODEL=qwen3.8-flash
-DOUBAO_MODEL=doubao-seed-2-1-turbo-260628
-MAX_MATERIALS=5
+DEEPSEEK_API_KEY=
+DOUBAO_API_KEY=
+OPENAI_API_KEY=
+QWEN_API_KEY=
 ```
 
-不要把 `.env` 上传到GitHub。.gitignore已经忽略该文件。OpenAI官方SDK会通过环境变量使用API Key；DeepSeek接口使用OpenAI兼容格式。
+请勿将 `.env` 或任何真实 API Key 上传到 GitHub。
 
-## 5. 先做不调用API的本地检查
+### 5. 启动网页 Demo
 
 ```bash
-python generate_summaries.py --dry-run
-pytest -q
+python -m streamlit run app.py
 ```
 
-预期结果：显示读取到5份资料、将生成10份摘要，测试全部通过。
+浏览器访问：
 
-## 6. 先生成1份资料的两版摘要
-
-```bash
-python generate_summaries.py --limit 1
+```text
+http://localhost:8501
 ```
 
-输出文件：`data/output/generated_summaries.xlsx`
+## 九、运行离线评测
 
-确认两份摘要正常后，再运行全部5份：
-
-```bash
-python generate_summaries.py --limit 5
-```
-
-## 7. 先评测一份摘要
+生成摘要：
 
 ```bash
-python evaluate_summaries.py --limit 1
-```
-
-输出文件：`data/output/evaluation_results.xlsx`
-
-确认评分与理由正常后，再评测全部摘要：
-
-```bash
-python evaluate_summaries.py
-```
-
-## 8. 使用同一Prompt比较三个模型
-
-固定使用V2，各生成1份资料进行低成本测试：
-
-```bash
-python generate_summaries.py --model deepseek --prompt-version V2 --limit 1
-python generate_summaries.py --model qwen --prompt-version V2 --limit 1
 python generate_summaries.py --model doubao --prompt-version V2 --limit 1
 ```
 
-确认成功后，把 `--limit 1` 改为 `--limit 5`。生成结果会合并到同一个
-`generated_summaries.xlsx`，不会删除另一个模型的结果。
-
-只评测千问或豆包新生成的摘要：
+执行评测：
 
 ```bash
-python evaluate_summaries.py --model qwen --limit 1
 python evaluate_summaries.py --model doubao --limit 1
 ```
 
-完成所有模型评测后运行 `python analyze_results.py`，在报告的
-`模型对比_V2` 工作表查看统一Prompt下的模型横向结果。
+生成分析报告：
 
-## 数据字段如何进入DeepEval
+```bash
+python analyze_results.py
+```
 
-- `input`：学习资料正文
-- `actual_output`：DeepSeek生成的摘要
-- `expected_output`：人工复核知识点
+建议先使用 `--limit 1` 验证流程，再逐步扩大测试数量，以控制 API 成本。
 
-DeepEval负责建立测试用例、运行G-Eval指标并保存分数；OpenAI模型承担语义判断。自动评分不是绝对标准，项目完成后仍应抽查5～10份结果。
+## 十、Demo 验收结果
 
-## 常见问题
+本轮共执行 6 个核心测试用例，已执行用例全部通过，包括：
 
-### 提示缺少API Key
+- 空内容校验；
+- 过短内容校验；
+- 正常短资料的快速总结；
+- 正常短资料的详细总结；
+- 较长资料的快速总结；
+- 较长资料的详细总结。
 
-确认项目根目录存在 `.env`，变量名完全一致，并重新打开终端。
+模型服务异常和接口超时场景仍需进一步补充测试，因此当前 Demo 的验收结果为“有条件通过”。
 
-### OpenAI模型不可用
+详细报告：
 
-把 `.env` 中的 `OPENAI_JUDGE_MODEL` 改成你的API账号可调用的模型。不要把ChatGPT网页会员误认为API额度。
+- [Demo 验收测试报告（PDF）](docs/demo-acceptance-test-report.pdf)
+- [Demo 验收测试报告（Word）](docs/demo-acceptance-test-report.docx)
 
-### DeepSeek模型不可用
+## 十一、项目价值
 
-模型名称可能随平台更新。到DeepSeek API官方文档确认当前模型名，再修改 `DEEPSEEK_MODEL`。
+本项目不仅完成了大模型 API 调用，还覆盖了 AI 产品从评测到落地的完整过程：
 
-### 控制成本
+1. 定义真实学习场景与用户需求；
+2. 构建测试数据集和评测指标；
+3. 完成多模型与 Prompt 对比实验；
+4. 根据质量和效率结果制定模型选型方案；
+5. 将实验结论转化为双模式网页 Demo；
+6. 通过验收测试验证核心产品链路。
 
-始终先使用 `--limit 1`。确认单条流程正确后，再扩展到5份或30份。
+## 十二、后续规划
 
-## 后续扩展
+- 增加 PDF、Word 和 TXT 文件上传；
+- 增加摘要复制与下载功能；
+- 补充超时、限流和接口失败测试；
+- 保存用户历史生成记录；
+- 增加模型成本估算；
+- 部署为可公开访问的在线 Demo。
 
-1. 加入千问、豆包和Gemini作为被测模型。
-2. 比较不同模型、Prompt、成本与响应时间。
-3. 人工抽样评分并计算与自动评分的差异。
-4. 使用Streamlit制作上传、运行和查看报告的网页。
+## 安全说明
 
-## 参考文档
-
-- DeepEval G-Eval：https://deepeval.com/docs/metrics-llm-evals
-- DeepEval测试用例：https://deepeval.com/docs/evaluation-test-cases
-- OpenAI API快速入门：https://platform.openai.com/docs/quickstart/make-your-first-api-request
-- DeepSeek API快速入门：https://api-docs.deepseek.com/
+- `.env` 已加入 `.gitignore`；
+- 仓库仅保留 `.env.example`；
+- 请勿在代码、截图、报告或提交记录中公开真实 API Key；
+- AI 生成内容可能存在遗漏或错误，重要知识点应结合原始资料核对。
